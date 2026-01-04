@@ -1,9 +1,13 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
+const controllerRoutes = require('./routes/controller.routes');
+const deviceRoutes = require('./routes/device.routes');
 const { testConnection } = require('./config/database');
+const specs = require('./config/swagger');
 
 dotenv.config();
 
@@ -12,10 +16,14 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+// Swagger documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/controllers', controllerRoutes);
+app.use('/api/devices', deviceRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
