@@ -6,6 +6,7 @@ const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const controllerRoutes = require('./routes/controller.routes');
 const deviceRoutes = require('./routes/device.routes');
+const deviceDataRoutes = require('./routes/deviceData.routes');
 const { testConnection } = require('./config/database');
 const specs = require('./config/swagger');
 
@@ -24,6 +25,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/controllers', controllerRoutes);
 app.use('/api/devices', deviceRoutes);
+app.use('/api/device-data', deviceDataRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
