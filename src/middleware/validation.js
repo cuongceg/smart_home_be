@@ -139,6 +139,110 @@ const validateAdminUpdateUser = [
     checkValidation
 ];
 
+// Validation rules for controller creation
+const validateCreateController = [
+    body('name')
+        .trim()
+        .isLength({ min: 1, max: 100 })
+        .withMessage('Controller name must be between 1 and 100 characters'),
+    body('controller_key')
+        .trim()
+        .isLength({ min: 1, max: 50 })
+        .withMessage('Controller key must be between 1 and 50 characters'),
+    body('mac_address')
+        .matches(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/)
+        .withMessage('Invalid MAC address format (expected: XX:XX:XX:XX:XX:XX or XX-XX-XX-XX-XX-XX)'),
+    body('latitude')
+        .optional()
+        .isFloat({ min: -90, max: 90 })
+        .withMessage('Latitude must be a number between -90 and 90'),
+    body('longitude')
+        .optional()
+        .isFloat({ min: -180, max: 180 })
+        .withMessage('Longitude must be a number between -180 and 180'),
+    checkValidation
+];
+
+// Validation rules for controller update
+const validateUpdateController = [
+    body('name')
+        .optional()
+        .trim()
+        .isLength({ min: 1, max: 100 })
+        .withMessage('Controller name must be between 1 and 100 characters'),
+    body('controller_key')
+        .optional()
+        .trim()
+        .isLength({ min: 1, max: 50 })
+        .withMessage('Controller key must be between 1 and 50 characters'),
+    body('mac_address')
+        .optional()
+        .matches(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/)
+        .withMessage('Invalid MAC address format (expected: XX:XX:XX:XX:XX:XX or XX-XX-XX-XX-XX-XX)'),
+    body('latitude')
+        .optional()
+        .isFloat({ min: -90, max: 90 })
+        .withMessage('Latitude must be a number between -90 and 90'),
+    body('longitude')
+        .optional()
+        .isFloat({ min: -180, max: 180 })
+        .withMessage('Longitude must be a number between -180 and 180'),
+    body('is_active')
+        .optional()
+        .isBoolean()
+        .withMessage('is_active must be a boolean value'),
+    checkValidation
+];
+
+// Validation rules for device creation
+const validateCreateDevice = [
+    body('controller_key')
+        .trim()
+        .isLength({ min: 1, max: 50 })
+        .withMessage('Controller key must be between 1 and 50 characters'),
+    body('room')
+        .trim()
+        .isLength({ min: 1, max: 50 })
+        .withMessage('Room name must be between 1 and 50 characters'),
+    body('name')
+        .trim()
+        .isLength({ min: 1, max: 100 })
+        .withMessage('Device name must be between 1 and 100 characters'),
+    body('type')
+        .trim()
+        .isLength({ min: 1, max: 50 })
+        .withMessage('Device type must be between 1 and 50 characters'),
+    body('config')
+        .optional()
+        .isObject()
+        .withMessage('Config must be a valid JSON object'),
+    checkValidation
+];
+
+// Validation rules for device update
+const validateUpdateDevice = [
+    body('room')
+        .optional()
+        .trim()
+        .isLength({ min: 1, max: 50 })
+        .withMessage('Room name must be between 1 and 50 characters'),
+    body('name')
+        .optional()
+        .trim()
+        .isLength({ min: 1, max: 100 })
+        .withMessage('Device name must be between 1 and 100 characters'),
+    body('type')
+        .optional()
+        .trim()
+        .isLength({ min: 1, max: 50 })
+        .withMessage('Device type must be between 1 and 50 characters'),
+    body('config')
+        .optional()
+        .isObject()
+        .withMessage('Config must be a valid JSON object'),
+    checkValidation
+];
+
 module.exports = {
     validateRegister,
     validateLogin,
@@ -148,5 +252,9 @@ module.exports = {
     validateResetPassword,
     validateUserProfileUpdate,
     validateAdminUpdateUser,
-    checkValidation
+    checkValidation,
+    validateCreateController,
+    validateUpdateController,
+    validateCreateDevice,
+    validateUpdateDevice
 };
