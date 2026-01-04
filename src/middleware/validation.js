@@ -1,4 +1,4 @@
-const { body, validationResult } = require('express-validator');
+const { body, query, validationResult } = require('express-validator');
 
 // Middleware to check validation errors
 const checkValidation = (req, res, next) => {
@@ -243,6 +243,26 @@ const validateUpdateDevice = [
     checkValidation
 ];
 
+// Validation rules for device data query
+const validateDeviceDataQuery = [
+    query('controllerKey')
+        .notEmpty()
+        .withMessage('Controller key is required')
+        .isLength({ min: 1, max: 50 })
+        .withMessage('Controller key must be between 1 and 50 characters'),
+    query('from')
+        .notEmpty()
+        .withMessage('From date is required')
+        .isISO8601({ strict: true })
+        .withMessage('From date must be a valid ISO8601 datetime'),
+    query('to')
+        .notEmpty()
+        .withMessage('To date is required')
+        .isISO8601({ strict: true })
+        .withMessage('To date must be a valid ISO8601 datetime'),
+    checkValidation
+];
+
 module.exports = {
     validateRegister,
     validateLogin,
@@ -256,5 +276,6 @@ module.exports = {
     validateCreateController,
     validateUpdateController,
     validateCreateDevice,
-    validateUpdateDevice
+    validateUpdateDevice,
+    validateDeviceDataQuery
 };
