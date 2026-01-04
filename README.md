@@ -78,6 +78,143 @@ A Node.js/Express.js backend application for managing smart home IoT devices wit
 - `PUT /api/devices/:id` - Update device
 - `DELETE /api/devices/:id` - Delete device
 - `GET /api/devices/room/:room` - Get devices in specific room
+- `GET /api/devices/stats` - Get device statistics by room and type
+
+### Device Data (Time-series)
+- `GET /api/device-data` - Get time-series data for charts (requires controllerKey, from, to parameters)
+- `GET /api/device-data/controllers` - Get available controllers for the user
+
+### Device Statistics API
+
+The `/api/devices/stats` endpoint provides comprehensive statistics about your devices organized by room and type. This is useful for dashboard displays and analytics.
+
+#### Response Format
+```json
+{
+    "success": true,
+    "message": "Device statistics retrieved successfully",
+    "by_room": [
+        {
+            "room": "Living Room",
+            "count": 5
+        },
+        {
+            "room": "Kitchen",
+            "count": 3
+        },
+        {
+            "room": "Bedroom",
+            "count": 2
+        }
+    ],
+    "by_type": [
+        {
+            "type": "SENSOR",
+            "count": 7
+        },
+        {
+            "type": "ACTUATOR",
+            "count": 2
+        },
+        {
+            "type": "CAMERA",
+            "count": 1
+        }
+    ]
+}
+```
+
+#### Usage Example
+```bash
+curl -X GET \
+  http://localhost:3000/api/devices/stats \
+  -H 'Authorization: Bearer your_jwt_token'
+```
+
+### Device Data API (Time-series)
+
+The Device Data API provides time-series data optimized for Flutter `fl_chart` with TimescaleDB performance optimization.
+
+#### Get Time-series Data
+`GET /api/device-data`
+
+**Query Parameters:**
+- `controllerKey` (required): Controller key to filter data
+- `from` (required): Start time in ISO8601 format with timezone (+07:00)
+- `to` (required): End time in ISO8601 format with timezone (+07:00)
+
+**Response Format:**
+```json
+{
+  "controllerKey": "ESP32_001",
+  "from": "2024-01-01T00:00:00.000Z",
+  "to": "2024-01-02T00:00:00.000Z",
+  "data": [
+    {
+      "time": "2024-01-01T12:00:00.000Z",
+      "temperature": 25.5,
+      "humidity": 60.2,
+      "gas_concentration": 150.3,
+      "metadata": {"sensor_id": "DHT22", "location": "living_room"}
+    }
+  ]
+}
+```
+
+**Features:**
+- Validates user access to controller data
+- Supports maximum 30-day time range for performance
+- Uses optimized TimescaleDB indexes for fast queries
+- Data ordered by time ASC for chart rendering
+- Supports timezone-aware datetime filtering
+
+#### Usage Example
+```bash
+curl -X GET \
+  "http://localhost:3000/api/device-data?controllerKey=ESP32_001&from=2024-01-01T00:00:00%2B07:00&to=2024-01-02T00:00:00%2B07:00" \
+  -H 'Authorization: Bearer your_jwt_token'
+```
+
+#### Get Available Controllers
+`GET /api/device-data/controllers`
+
+Returns list of controllers owned by the authenticated user.
+
+**Response Format:**
+```json
+{
+  "success": true,
+  "message": "Controllers retrieved successfully",
+  "data": [
+    {
+      "controller_key": "ESP32_001",
+      "name": "Living Room Controller"
+    }
+  ]
+}
+```
+
+#### Usage Example
+```bash
+curl -X GET \
+  "http://localhost:3000/api/device-data/controllers" \
+  -H 'Authorization: Bearer your_jwt_token'
+```
+
+#### Performance Optimization
+
+The Device Data API includes intelligent caching for high-frequency IoT data:
+
+- **Automatic Caching**: Recent queries are cached for 5 minutes
+- **Smart TTL**: Recent data (last hour) cached for 30 seconds only
+- **Cache Invalidation**: Cache automatically invalidated when new data arrives
+- **Performance Monitoring**: Use `/api/device-data/cache/stats` to monitor cache performance
+- **Memory Efficient**: Large datasets (>10k records) are not cached to prevent memory issues
+
+#### Cache Monitoring
+`GET /api/device-data/cache/stats`
+
+Returns cache statistics including hit/miss ratios, memory usage, and key counts.
 
 ## Installation & Setup
 
