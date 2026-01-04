@@ -148,6 +148,79 @@ router.post('/', authMiddleware, validateCreateDevice, DeviceController.createDe
 
 /**
  * @swagger
+ * /api/devices/stats:
+ *   get:
+ *     summary: Get device statistics by room and type
+ *     tags: [Devices]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Device statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Device statistics retrieved successfully"
+ *                 by_room:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       room:
+ *                         type: string
+ *                         example: "Living Room"
+ *                       count:
+ *                         type: integer
+ *                         example: 5
+ *                 by_type:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       type:
+ *                         type: string
+ *                         example: "SENSOR"
+ *                       count:
+ *                         type: integer
+ *                         example: 3
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized access"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Internal server error"
+ */
+router.get('/stats', authMiddleware, DeviceController.getDeviceStats);
+
+/**
+ * @swagger
  * /api/devices:
  *   get:
  *     summary: Get all devices owned by the current user, grouped by room
@@ -295,7 +368,7 @@ router.delete('/:id', authMiddleware, DeviceController.deleteDevice);
  * @swagger
  * /api/devices/room/{room}:
  *   get:
- *     summary: Get all devices in a specific room
+ *     summary: Get devices in a specific room
  *     tags: [Devices]
  *     security:
  *       - bearerAuth: []

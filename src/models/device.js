@@ -97,6 +97,32 @@ class Device {
         const result = await pool.query(query, [deviceId, userId]);
         return result.rows.length > 0;
     }
+
+    static async getStatsByRoom(userId) {
+        const query = `
+            SELECT d.room, COUNT(*) as count
+            FROM devices d
+            JOIN controllers c ON d.controller_key = c.controller_key
+            WHERE c.owner_id = $1 AND c.is_active = true
+            GROUP BY d.room
+            ORDER BY d.room
+        `;
+        const result = await pool.query(query, [userId]);
+        return result.rows;
+    }
+
+    static async getStatsByType(userId) {
+        const query = `
+            SELECT d.type, COUNT(*) as count
+            FROM devices d
+            JOIN controllers c ON d.controller_key = c.controller_key
+            WHERE c.owner_id = $1 AND c.is_active = true
+            GROUP BY d.type
+            ORDER BY d.type
+        `;
+        const result = await pool.query(query, [userId]);
+        return result.rows;
+    }
 }
 
 module.exports = Device;

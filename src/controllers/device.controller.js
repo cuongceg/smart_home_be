@@ -238,6 +238,34 @@ class DeviceController {
             });
         }
     }
+
+    static async getDeviceStats(req, res) {
+        try {
+            const [roomStats, typeStats] = await Promise.all([
+                Device.getStatsByRoom(req.user.id),
+                Device.getStatsByType(req.user.id)
+            ]);
+
+            res.json({
+                success: true,
+                message: 'Device statistics retrieved successfully',
+                by_room: roomStats.map(stat => ({
+                    room: stat.room,
+                    count: parseInt(stat.count)
+                })),
+                by_type: typeStats.map(stat => ({
+                    type: stat.type,
+                    count: parseInt(stat.count)
+                }))
+            });
+        } catch (error) {
+            console.error('Get device stats error:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Internal server error'
+            });
+        }
+    }
 }
 
 module.exports = DeviceController;
