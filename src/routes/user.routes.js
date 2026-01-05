@@ -1,15 +1,21 @@
-const express = require('express');
-const { 
-    updateProfile, 
-    getAllUsers, 
-    getUserById, 
-    updateUserById, 
-    deleteUserById,
-    getProfile, 
-    createUser
-} = require('../controllers/user.controller');
-const { authMiddleware, adminMiddleware } = require('../middleware/auth');
-const { validateUserProfileUpdate, validateAdminUpdateUser,validateRegister } = require('../middleware/validation');
+const express = require("express");
+const {
+  updateProfile,
+  getAllUsers,
+  getUserById,
+  updateUserById,
+  deleteUserById,
+  getProfile,
+  createUser,
+  registerFcmToken,
+} = require("../controllers/user.controller");
+const { authMiddleware, adminMiddleware } = require("../middleware/auth");
+const {
+  validateUserProfileUpdate,
+  validateAdminUpdateUser,
+  validateRegister,
+  validateFcmToken,
+} = require("../middleware/validation");
 const router = express.Router();
 
 /**
@@ -129,7 +135,7 @@ const router = express.Router();
  *       500:
  *         description: Internal server error
  */
-router.get('/profile', authMiddleware, getProfile);
+router.get("/profile", authMiddleware, getProfile);
 
 /**
  * @swagger
@@ -183,7 +189,12 @@ router.get('/profile', authMiddleware, getProfile);
  *       500:
  *         description: Internal server error
  */
-router.put('/profile', authMiddleware, validateUserProfileUpdate, updateProfile);
+router.put(
+  "/profile",
+  authMiddleware,
+  validateUserProfileUpdate,
+  updateProfile
+);
 
 /**
  * @swagger
@@ -235,7 +246,7 @@ router.put('/profile', authMiddleware, validateUserProfileUpdate, updateProfile)
  *         description: Server error
  */
 
-router.post('/', authMiddleware, adminMiddleware, validateRegister, createUser);
+router.post("/", authMiddleware, adminMiddleware, validateRegister, createUser);
 
 /**
  * @swagger
@@ -285,7 +296,52 @@ router.post('/', authMiddleware, adminMiddleware, validateRegister, createUser);
  *       500:
  *         description: Internal server error
  */
-router.get('/', authMiddleware, adminMiddleware, getAllUsers);
+router.get("/", authMiddleware, adminMiddleware, getAllUsers);
+
+/**
+ * @swagger
+ * /api/users/fcm-token:
+ *   put:
+ *     summary: Register or update FCM Token for push notifications
+ *     tags:
+ *       - Users
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - fcm_token
+ *             properties:
+ *               fcm_token:
+ *                 type: string
+ *                 description: The Firebase Cloud Messaging token from client device
+ *     responses:
+ *       200:
+ *         description: Token registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: FCM Token registered successfully
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+
+router.put("/fcm-token", authMiddleware, validateFcmToken, registerFcmToken);
 
 /**
  * @swagger
@@ -327,7 +383,7 @@ router.get('/', authMiddleware, adminMiddleware, getAllUsers);
  *       500:
  *         description: Internal server error
  */
-router.get('/:id', authMiddleware, adminMiddleware, getUserById);
+router.get("/:id", authMiddleware, adminMiddleware, getUserById);
 
 /**
  * @swagger
@@ -389,7 +445,13 @@ router.get('/:id', authMiddleware, adminMiddleware, getUserById);
  *       500:
  *         description: Internal server error
  */
-router.put('/:id', authMiddleware, adminMiddleware, validateAdminUpdateUser, updateUserById);
+router.put(
+  "/:id",
+  authMiddleware,
+  adminMiddleware,
+  validateAdminUpdateUser,
+  updateUserById
+);
 
 /**
  * @swagger
@@ -439,6 +501,5 @@ router.put('/:id', authMiddleware, adminMiddleware, validateAdminUpdateUser, upd
  *       500:
  *         description: Internal server error
  */
-router.delete('/:id', authMiddleware, adminMiddleware, deleteUserById);
-
+router.delete("/:id", authMiddleware, adminMiddleware, deleteUserById);
 module.exports = router;
