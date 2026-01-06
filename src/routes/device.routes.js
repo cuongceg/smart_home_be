@@ -11,70 +11,6 @@ const router = express.Router();
 
 /**
  * @swagger
- * /api/devices/my-shared:
- *   get:
- *     summary: Get devices that the current user has shared with others
- *     tags: [Devices - Sharing]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: My shared devices retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: string
- *                         format: uuid
- *                       controller_key:
- *                         type: string
- *                       room:
- *                         type: string
- *                       name:
- *                         type: string
- *                       type:
- *                         type: string
- *                       config:
- *                         type: object
- *                       shared_with:
- *                         type: array
- *                         items:
- *                           type: object
- *                           properties:
- *                             user_id:
- *                               type: string
- *                               format: uuid
- *                             username:
- *                               type: string
- *                             gmail:
- *                               type: string
- *                             added_at:
- *                               type: string
- *                               format: date-time
- *                       created_at:
- *                         type: string
- *                         format: date-time
- *                       updated_at:
- *                         type: string
- *                         format: date-time
- *       401:
- *         description: Unauthorized
- */
-router.get('/my-shared', authMiddleware, DeviceController.getMySharedDevices);
-
-/**
- * @swagger
  * components:
  *   schemas:
  *     Device:
@@ -171,6 +107,128 @@ router.get('/my-shared', authMiddleware, DeviceController.getMySharedDevices);
  *                 type: string
  *                 format: date-time
  */
+
+/**
+ * @swagger
+ * /api/devices/my-shared:
+ *   get:
+ *     summary: Get devices that the current user has shared with others
+ *     tags: [Devices - Sharing]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: My shared devices retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       controller_key:
+ *                         type: string
+ *                       room:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       type:
+ *                         type: string
+ *                       config:
+ *                         type: object
+ *                       shared_with:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             user_id:
+ *                               type: string
+ *                               format: uuid
+ *                             username:
+ *                               type: string
+ *                             gmail:
+ *                               type: string
+ *                             added_at:
+ *                               type: string
+ *                               format: date-time
+ *                       created_at:
+ *                         type: string
+ *                         format: date-time
+ *                       updated_at:
+ *                         type: string
+ *                         format: date-time
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/my-shared', authMiddleware, DeviceController.getMySharedDevices);
+
+/**
+ * @swagger
+ * /api/devices/shared:
+ *   get:
+ *     summary: Get devices that are shared with the current user
+ *     tags: [Devices - Sharing]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Shared devices retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                         description: Room name
+ *                       devices:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: string
+ *                               format: uuid
+ *                             name:
+ *                               type: string
+ *                             type:
+ *                               type: string
+ *                             config:
+ *                               type: object
+ *                             controller_key:
+ *                               type: string
+ *                             access_type:
+ *                               type: string
+ *                               enum: [member]
+ *                             created_at:
+ *                               type: string
+ *                               format: date-time
+ *                             updated_at:
+ *                               type: string
+ *                               format: date-time
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/shared', authMiddleware, DeviceController.getSharedDevices);
 
 /**
  * @swagger
@@ -656,63 +714,5 @@ router.get('/:deviceId/members', authMiddleware, DeviceController.getDeviceMembe
  *         description: Unauthorized
  */
 router.delete('/:deviceId/revoke/:userId', authMiddleware, DeviceController.revokeDeviceAccess);
-
-/**
- * @swagger
- * /api/devices/shared:
- *   get:
- *     summary: Get devices that are shared with the current user
- *     tags: [Devices - Sharing]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Shared devices retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       name:
- *                         type: string
- *                         description: Room name
- *                       devices:
- *                         type: array
- *                         items:
- *                           type: object
- *                           properties:
- *                             id:
- *                               type: string
- *                               format: uuid
- *                             name:
- *                               type: string
- *                             type:
- *                               type: string
- *                             config:
- *                               type: object
- *                             controller_key:
- *                               type: string
- *                             access_type:
- *                               type: string
- *                               enum: [member]
- *                             created_at:
- *                               type: string
- *                               format: date-time
- *                             updated_at:
- *                               type: string
- *                               format: date-time
- *       401:
- *         description: Unauthorized
- */
-router.get('/shared', authMiddleware, DeviceController.getSharedDevices);
 
 module.exports = router;

@@ -434,8 +434,15 @@ class DeviceController {
             // Query để lấy devices mà user owns và đã share
             const { pool } = require('../config/database');
             const query = `
-                SELECT DISTINCT d.*, 
-                       ARRAY_AGG(
+                SELECT d.id,
+                       d.controller_key,
+                       d.room,
+                       d.name,
+                       d.type,
+                       d.config,
+                       d.created_at,
+                       d.updated_at,
+                       JSON_AGG(
                            JSON_BUILD_OBJECT(
                                'user_id', u.id,
                                'username', u.username,
@@ -454,10 +461,34 @@ class DeviceController {
             
             const result = await pool.query(query, [userId]);
 
+            // Group by room cho response
+            const roomGroups = result.rows.reduce((acc, device) => {
+                const roomName = device.room;
+                if (!acc[roomName]) {
+                    acc[roomName] = {
+                        name: roomName,
+                        devices: []
+                    };
+                }
+
+                acc[roomName].devices.push({
+                    id: device.id,
+                    name: device.name,
+                    type: device.type,
+                    config: device.config,
+                    controller_key: device.controller_key,
+                    shared_with: device.shared_with,
+                    created_at: device.created_at,
+                    updated_at: device.updated_at
+                });
+
+                return acc;
+            }, {});
+
             res.json({
                 success: true,
                 message: 'My shared devices retrieved successfully',
-                data: result.rows
+                data: Object.values(roomGroups)
             });
         } catch (error) {
             console.error('Get my shared devices error:', error);

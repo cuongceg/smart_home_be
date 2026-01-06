@@ -12,6 +12,10 @@ const swaggerOptions = {
         servers: [
             {
                 url: 'https://iot.dev-monitor.id.vn',
+                description: 'Production server',
+            },
+            {
+                url: 'http://localhost:3000',
                 description: 'Development server',
             },
         ],
