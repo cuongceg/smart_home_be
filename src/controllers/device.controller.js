@@ -266,6 +266,207 @@ class DeviceController {
             });
         }
     }
+
+    // Share devices với multiple users
+    static async shareDevices(req, res) {
+        try {
+            const { targetUserId, deviceIds } = req.body;
+
+            if (!targetUserId || !deviceIds || !Array.isArray(deviceIds) || deviceIds.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'targetUserId and deviceIds array are required'
+                });
+            }
+
+            // Validate UUID format
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(targetUserId)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid targetUserId format'
+                });
+            }
+
+            for (const deviceId of deviceIds) {
+                if (!uuidRegex.test(deviceId)) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Invalid device ID format: ${deviceId}`
+                    });
+                }
+            }
+
+            const result = await Device.shareDevices(req.user.id, targetUserId, deviceIds);
+
+            res.json({
+                success: true,
+                message: result.message,
+                data: {
+                    sharedDevices: result.sharedDevices,
+                    totalDevices: result.totalDevices,
+                    targetUserId: targetUserId
+                }
+            });
+        } catch (error) {
+            console.error('Share devices error:', error);
+            if (error.message.includes('does not own') || error.message.includes('not found')) {
+                return res.status(404).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+            res.status(500).json({
+                success: false,
+                message: 'Internal server error'
+            });
+        }
+    }
+
+    // Lấy danh sách members của một device
+    static async getDeviceMembers(req, res) {
+        try {
+            const { deviceId } = req.params;
+
+            const members = await Device.getDeviceMembers(deviceId, req.user.id);
+
+            res.json({
+                success: true,
+                message: 'Device members retrieved successfully',
+                data: {
+                    deviceId: deviceId,
+                    members: members
+                }
+            });
+        } catch (error) {
+            console.error('Get device members error:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Internal server error'
+            });
+        }
+    }
+
+    // Revoke quyền truy cập device
+    static async revokeDeviceAccess(req, res) {
+        try {
+            const { deviceId, userId } = req.params;
+
+            const result = await Device.revokeDeviceAccess(deviceId, req.user.id, userId);
+
+            res.json({
+                success: true,
+                message: result.message,
+                data: {
+                    deviceId: deviceId,
+                    revokedUserId: userId,
+                    revoked: result.revoked
+                }
+            });
+        } catch (error) {
+            console.error('Revoke device access error:', error);
+            if (error.message.includes('not found') || error.message.includes('does not own')) {
+                return res.status(404).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+            res.status(500).json({
+                success: false,
+                message: 'Internal server error'
+            });
+        }
+    }
+
+    // Lấy danh sách devices được share cho user hiện tại
+    static async getSharedDevices(req, res) {
+        try {
+            const devices = await Device.findByUserId(req.user.id);
+            
+            // Filter chỉ những devices được share (không phải owner)
+            const sharedDevices = devices.filter(device => device.access_type === 'member');
+
+            // Group by room
+            const roomGroups = sharedDevices.reduce((acc, device) => {
+                const roomName = device.room;
+                if (!acc[roomName]) {
+                    acc[roomName] = {
+                        name: roomName,
+                        devices: []
+                    };
+                }
+
+                acc[roomName].devices.push({
+                    id: device.id,
+                    name: device.name,
+                    type: device.type,
+                    config: device.config,
+                    controller_key: device.controller_key,
+                    access_type: device.access_type,
+                    created_at: device.created_at,
+                    updated_at: device.updated_at
+                });
+
+                return acc;
+            }, {});
+
+            const result = Object.values(roomGroups);
+
+            res.json({
+                success: true,
+                message: 'Shared devices retrieved successfully',
+                data: result
+            });
+        } catch (error) {
+            console.error('Get shared devices error:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Internal server error'
+            });
+        }
+    }
+
+    // Lấy danh sách devices mà user đã share cho người khác
+    static async getMySharedDevices(req, res) {
+        try {
+            const userId = req.user.id;
+            
+            // Query để lấy devices mà user owns và đã share
+            const { pool } = require('../config/database');
+            const query = `
+                SELECT DISTINCT d.*, 
+                       ARRAY_AGG(
+                           JSON_BUILD_OBJECT(
+                               'user_id', u.id,
+                               'username', u.username,
+                               'gmail', u.gmail,
+                               'added_at', dm.added_at
+                           )
+                       ) as shared_with
+                FROM devices d
+                JOIN controllers c ON d.controller_key = c.controller_key
+                JOIN device_members dm ON d.id = dm.device_id
+                JOIN users u ON dm.user_id = u.id
+                WHERE c.owner_id = $1 AND c.is_active = true
+                GROUP BY d.id, d.controller_key, d.room, d.name, d.type, d.config, d.created_at, d.updated_at
+                ORDER BY d.room, d.name
+            `;
+            
+            const result = await pool.query(query, [userId]);
+
+            res.json({
+                success: true,
+                message: 'My shared devices retrieved successfully',
+                data: result.rows
+            });
+        } catch (error) {
+            console.error('Get my shared devices error:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Internal server error'
+            });
+        }
+    }
 }
 
 module.exports = DeviceController;
