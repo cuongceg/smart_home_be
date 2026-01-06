@@ -4,3 +4,4 @@ package-lock.json
 database/
 pg_data/
 .DS_Store
+serviceAccountKey.json
