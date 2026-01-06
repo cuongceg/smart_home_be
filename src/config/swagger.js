@@ -46,6 +46,10 @@ const swaggerOptions = {
                 name: 'Devices',
                 description: 'IoT device management endpoints',
             },
+            {
+                name: 'Devices - Sharing',
+                description: 'Device sharing and access management endpoints',
+            },
         ],
     },
     apis: ['./src/routes/*.js'],
