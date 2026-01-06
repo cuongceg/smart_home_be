@@ -265,6 +265,19 @@ const validateDeviceDataQuery = [
   checkValidation,
 ];
 
+const validateShareDevices = [
+    body('targetUserId')
+        .isUUID()
+        .withMessage('Target user ID must be a valid UUID'),
+    body('deviceIds')
+        .isArray({ min: 1 })
+        .withMessage('Device IDs must be a non-empty array'),
+    body('deviceIds.*')
+        .isUUID()
+        .withMessage('Each device ID must be a valid UUID'),
+    checkValidation
+];
+
 module.exports = {
     validateRegister,
     validateLogin,
@@ -280,5 +293,6 @@ module.exports = {
     validateCreateDevice,
     validateUpdateDevice,
     validateDeviceDataQuery,
-    validateShareDevices
+    validateShareDevices,
+    validateFcmToken
 };
