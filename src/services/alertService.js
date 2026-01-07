@@ -8,33 +8,64 @@ const ALERT_TITLE = {
 };
 
 const createAlertAndNotify = async (deviceId, payload) => {
-    if (deviceId === 'unknown')
+    // 1. Validate input đầu vào
+    if (!deviceId || deviceId === 'unknown') {
+        console.warn("Alert received but deviceId is missing or unknown.");
         return;
+    }
 
-    const {alertType, severity, message} = payload;
+    const { alertType, severity, message } = payload;
+    const title = ALERT_TITLE[alertType] || "CẢNH BÁO HỆ THỐNG";
 
-    const title = ALERT_TITLE[alertType] || "CẢNH BÁO HỆ THỐNG"
     try {
+        // 2. Lấy danh sách users liên quan từ DB (Code mới ở device.js)
         const users = await Device.getUsersByDeviceId(deviceId);
 
-        if (!users.length) return;
+        // 3. Lọc lấy mảng tokens sạch
+        // - Loại bỏ null/undefined
+        // - Loại bỏ chuỗi rỗng
+        const tokens = users
+            .map(u => u.fcm_token)
+            .filter(token => token && token.trim() !== "");
 
-        const tokens = users.map(u => u.fcm_token);
+        if (tokens.length === 0) {
+            console.log(`No valid FCM tokens found for device ${deviceId}. Skipping notification.`);
+            return;
+        }
 
-        await admin.messaging().sendEachForMulticast({
-            tokens,
+        console.log(`Sending notification to ${tokens.length} devices...`);
+
+        // 4. Gửi thông báo qua Firebase Multicast
+        const response = await admin.messaging().sendEachForMulticast({
+            tokens: tokens,
             notification: {
-                title,
-                body: message
+                title: title,
+                body: message || "Phát hiện bất thường từ thiết bị"
+            },
+            android: {
+                notification: {
+                    sound: 'default',
+                    priority: 'high',
+                    channelId: 'smart_home_alerts' // Cần khớp với config ở Flutter
+                },
+                priority: 'high'
             },
             data: {
-                alertType,
-                severity,
-                deviceId
+                click_action: "FLUTTER_NOTIFICATION_CLICK",
+                alertType: String(alertType),
+                severity: String(severity),
+                deviceId: String(deviceId) // Đảm bảo convert sang string
             },
         });
+
+        if (response.failureCount > 0) {
+            console.warn(`Failed to send ${response.failureCount} notifications.`);
+        } else {
+            console.log("Notifications sent successfully!");
+        }
+
     } catch (error) {
-        console.error("Error sending notification:", error);
+        console.error("Error in createAlertAndNotify:", error);
     }
 }
 

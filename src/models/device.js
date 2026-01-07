@@ -48,7 +48,7 @@ class Device {
 
   static async findById(id) {
     const query = `
-            SELECT d.*
+            SELECT d.*,c.owner_id as owner_id
             FROM devices d
             LEFT JOIN controllers c ON d.controller_key = c.controller_key
             WHERE d.id = $1
@@ -289,17 +289,35 @@ class Device {
   }
 
   static async getUsersByDeviceId(deviceId) {
+    // Query này lấy token của OWNER (qua bảng controllers)
+    // VÀ token của MEMBERS (qua bảng device_members)
+    // UNION sẽ tự động loại bỏ các dòng trùng lặp
     const query = `
-            SELECT DISTINCT u.id, u.fcm_token
-            FROM devices d
-            JOIN device_members dm ON dm.device_id = d.id
-            JOIN users u ON u.id = dm.user_id
-            WHERE d.controller_key = $1
-            AND u.is_active = true
-            AND u.fcm_token IS NOT NULL   
+            SELECT u.fcm_token
+            FROM users u
+            JOIN controllers c ON u.id = c.owner_id
+            JOIN devices d ON c.controller_key = d.controller_key
+            WHERE d.id = $1 
+              AND u.fcm_token IS NOT NULL 
+              AND u.is_active = TRUE
+
+            UNION
+
+            SELECT u.fcm_token
+            FROM users u
+            JOIN device_members dm ON u.id = dm.user_id
+            WHERE dm.device_id = $1 
+              AND u.fcm_token IS NOT NULL 
+              AND u.is_active = TRUE
         `;
-    const result = await pool.query(query, [deviceId]);
-    return result.rows;
+
+    try {
+      const result = await pool.query(query, [deviceId]);
+      return result.rows; // Trả về mảng dạng: [{ fcm_token: 'abc...' }, { fcm_token: 'xyz...' }]
+    } catch (error) {
+      console.error(`Error finding users for device ${deviceId}:`, error);
+      return [];
+    }
   }
 
   // Hàm để revoke quyền truy cập device

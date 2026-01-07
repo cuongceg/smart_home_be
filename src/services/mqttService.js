@@ -2,11 +2,11 @@ const mqtt = require('mqtt');
 const User = require('../models/user');
 const { createAlertAndNotify } = require('./alertService');
 
-const BROKER_URL = process.env.MQTT_BROKER || 'mqtt://68.183.188.187:1885';
+const BROKER_URL = process.env.MQTT_BROKER || '';
 const TOPIC_PREFIX = process.env.MQTT_TOPIC_PREFIX || 'smart_home';
 const OPTIONS = {
-  username: process.env.MQTT_USERNAME || 'mqtt_admin',
-  password: process.env.MQTT_PASSWORD || '12345678@abc',
+  username: process.env.MQTT_USERNAME || '',
+  password: process.env.MQTT_PASSWORD || '',
 };
 
 
