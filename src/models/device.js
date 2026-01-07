@@ -1,20 +1,26 @@
-const { pool } = require('../config/database');
+const { pool } = require("../config/database");
 
 class Device {
-    static async create(deviceData) {
-        const { controller_key, room, name, type, config } = deviceData;
-        const query = `
+  static async create(deviceData) {
+    const { controller_key, room, name, type, config } = deviceData;
+    const query = `
             INSERT INTO devices (controller_key, room, name, type, config)
             VALUES ($1, $2, $3, $4, $5)
             RETURNING id, controller_key, room, name, type, config, created_at, updated_at
         `;
-        const values = [controller_key, room, name, type, JSON.stringify(config || {})];
-        const result = await pool.query(query, values);
-        return result.rows[0];
-    }
+    const values = [
+      controller_key,
+      room,
+      name,
+      type,
+      JSON.stringify(config || {}),
+    ];
+    const result = await pool.query(query, values);
+    return result.rows[0];
+  }
 
-    static async findAll() {
-        const query = `
+  static async findAll() {
+    const query = `
         SELECT 
             d.id,
             d.controller_key,
@@ -26,6 +32,7 @@ class Device {
             d.updated_at,
             c.owner_id,
             c.name as controller_name,
+            ST_AsGeoJSON(c.location)::jsonb as location,
             u.username as owner_username,
             u.gmail as owner_gmail
         FROM devices d
@@ -35,24 +42,25 @@ class Device {
         ORDER BY d.room, d.name
     `;
 
-        const result = await pool.query(query);
-        return result.rows;
-    }
+    const result = await pool.query(query);
+    return result.rows;
+  }
 
-    static async findById(id) {
-        const query = `
+  static async findById(id) {
+    const query = `
             SELECT d.*
             FROM devices d
             LEFT JOIN controllers c ON d.controller_key = c.controller_key
             WHERE d.id = $1
         `;
-        const result = await pool.query(query, [id]);
-        return result.rows[0];
-    }
+    const result = await pool.query(query, [id]);
+    return result.rows[0];
+  }
 
-    static async findByUserId(userId) {
-        const query = `
+  static async findByUserId(userId) {
+    const query = `
             SELECT DISTINCT d.*, 
+                    ST_AsGeoJSON(c.location)::jsonb as location,
                    CASE 
                        WHEN c.owner_id = $1 THEN 'owner'
                        ELSE 'member'
@@ -64,12 +72,12 @@ class Device {
                 AND c.is_active = true
             ORDER BY d.room, d.name
         `;
-        const result = await pool.query(query, [userId]);
-        return result.rows;
-    }
+    const result = await pool.query(query, [userId]);
+    return result.rows;
+  }
 
-    static async findByRoom(userId, room) {
-        const query = `
+  static async findByRoom(userId, room) {
+    const query = `
             SELECT DISTINCT d.*,
                    CASE 
                        WHEN c.owner_id = $1 THEN 'owner'
@@ -83,25 +91,25 @@ class Device {
                 AND c.is_active = true
             ORDER BY d.name
         `;
-        const result = await pool.query(query, [userId, room]);
-        return result.rows;
-    }
+    const result = await pool.query(query, [userId, room]);
+    return result.rows;
+  }
 
-    static async findByControllerKey(controller_key) {
-        const query = `
+  static async findByControllerKey(controller_key) {
+    const query = `
             SELECT d.*, c.name as controller_name
             FROM devices d
             JOIN controllers c ON d.controller_key = c.controller_key
             WHERE d.controller_key = $1
             ORDER BY d.room, d.name
         `;
-        const result = await pool.query(query, [controller_key]);
-        return result.rows;
-    }
+    const result = await pool.query(query, [controller_key]);
+    return result.rows;
+  }
 
-    static async update(id, updateData) {
-        const { room, name, type, config } = updateData;
-        const query = `
+  static async update(id, updateData) {
+    const { room, name, type, config } = updateData;
+    const query = `
             UPDATE devices
             SET room = COALESCE($2, room),
                 name = COALESCE($3, name),
@@ -111,23 +119,29 @@ class Device {
             WHERE id = $1
             RETURNING *
         `;
-        const values = [id, room, name, type, config ? JSON.stringify(config) : undefined];
-        const result = await pool.query(query, values);
-        return result.rows[0];
-    }
+    const values = [
+      id,
+      room,
+      name,
+      type,
+      config ? JSON.stringify(config) : undefined,
+    ];
+    const result = await pool.query(query, values);
+    return result.rows[0];
+  }
 
-    static async delete(id) {
-        const query = `
+  static async delete(id) {
+    const query = `
             DELETE FROM devices
             WHERE id = $1
             RETURNING id
         `;
-        const result = await pool.query(query, [id]);
-        return result.rows[0];
-    }
+    const result = await pool.query(query, [id]);
+    return result.rows[0];
+  }
 
-    static async checkAccess(deviceId, userId) {
-        const query = `
+  static async checkAccess(deviceId, userId) {
+    const query = `
             SELECT d.id
             FROM devices d
             JOIN controllers c ON d.controller_key = c.controller_key
@@ -136,12 +150,12 @@ class Device {
                 AND (c.owner_id = $2 OR dm.user_id = $2)
                 AND c.is_active = true
         `;
-        const result = await pool.query(query, [deviceId, userId]);
-        return result.rows.length > 0;
-    }
+    const result = await pool.query(query, [deviceId, userId]);
+    return result.rows.length > 0;
+  }
 
-    static async getStatsByRoom(userId) {
-        const query = `
+  static async getStatsByRoom(userId) {
+    const query = `
             SELECT d.room, COUNT(DISTINCT d.id) as count
             FROM devices d
             JOIN controllers c ON d.controller_key = c.controller_key
@@ -151,12 +165,12 @@ class Device {
             GROUP BY d.room
             ORDER BY d.room
         `;
-        const result = await pool.query(query, [userId]);
-        return result.rows;
-    }
+    const result = await pool.query(query, [userId]);
+    return result.rows;
+  }
 
-    static async getStatsByType(userId) {
-        const query = `
+  static async getStatsByType(userId) {
+    const query = `
             SELECT d.type, COUNT(DISTINCT d.id) as count
             FROM devices d
             JOIN controllers c ON d.controller_key = c.controller_key
@@ -166,69 +180,102 @@ class Device {
             GROUP BY d.type
             ORDER BY d.type
         `;
-        const result = await pool.query(query, [userId]);
-        return result.rows;
-    }
+    const result = await pool.query(query, [userId]);
+    return result.rows;
+  }
 
-    // Thêm tính năng Share nhiều thiết bị
-    static async shareDevices(ownerId, targetUserId, deviceIds) {
-        const client = await pool.connect();
-        
-        try {
-            await client.query('BEGIN');
+  // Thống kê tất cả thiết bị theo Room (Dành cho Admin)
+  static async getGlobalStatsByRoom() {
+    const query = `
+            SELECT d.room, COUNT(DISTINCT d.id) as count
+            FROM devices d
+            JOIN controllers c ON d.controller_key = c.controller_key
+            WHERE c.is_active = true
+            GROUP BY d.room
+            ORDER BY d.room
+        `;
+    const result = await pool.query(query);
+    return result.rows;
+  }
 
-            // Kiểm tra xem ownerId có thực sự là chủ sở hữu của TẤT CẢ các deviceIds
-            const ownershipCheckQuery = `
+  // Thống kê tất cả thiết bị theo Type (Dành cho Admin)
+  static async getGlobalStatsByType() {
+    const query = `
+            SELECT d.type, COUNT(DISTINCT d.id) as count
+            FROM devices d
+            JOIN controllers c ON d.controller_key = c.controller_key
+            WHERE c.is_active = true
+            GROUP BY d.type
+            ORDER BY d.type
+        `;
+    const result = await pool.query(query);
+    return result.rows;
+  }
+
+  // Thêm tính năng Share nhiều thiết bị
+  static async shareDevices(ownerId, targetUserId, deviceIds) {
+    const client = await pool.connect();
+
+    try {
+      await client.query("BEGIN");
+
+      // Kiểm tra xem ownerId có thực sự là chủ sở hữu của TẤT CẢ các deviceIds
+      const ownershipCheckQuery = `
                 SELECT d.id
                 FROM devices d
                 JOIN controllers c ON d.controller_key = c.controller_key
                 WHERE d.id = ANY($1) AND c.owner_id = $2 AND c.is_active = true
             `;
-            const ownershipResult = await client.query(ownershipCheckQuery, [deviceIds, ownerId]);
-            
-            if (ownershipResult.rows.length !== deviceIds.length) {
-                throw new Error('User does not own all specified devices');
-            }
+      const ownershipResult = await client.query(ownershipCheckQuery, [
+        deviceIds,
+        ownerId,
+      ]);
 
-            // Kiểm tra user nhận share có tồn tại không
-            const userCheckQuery = `
+      if (ownershipResult.rows.length !== deviceIds.length) {
+        throw new Error("User does not own all specified devices");
+      }
+
+      // Kiểm tra user nhận share có tồn tại không
+      const userCheckQuery = `
                 SELECT id FROM users WHERE id = $1 AND is_active = true
             `;
-            const userResult = await client.query(userCheckQuery, [targetUserId]);
-            
-            if (userResult.rows.length === 0) {
-                throw new Error('Target user not found or inactive');
-            }
+      const userResult = await client.query(userCheckQuery, [targetUserId]);
 
-            // Insert hàng loạt vào bảng device_members (sử dụng ON CONFLICT để tránh duplicate)
-            const shareQuery = `
+      if (userResult.rows.length === 0) {
+        throw new Error("Target user not found or inactive");
+      }
+
+      // Insert hàng loạt vào bảng device_members (sử dụng ON CONFLICT để tránh duplicate)
+      const shareQuery = `
                 INSERT INTO device_members (device_id, user_id)
                 SELECT unnest($1::uuid[]), $2::uuid
                 ON CONFLICT (device_id, user_id) DO NOTHING
                 RETURNING device_id
             `;
-            const shareResult = await client.query(shareQuery, [deviceIds, targetUserId]);
+      const shareResult = await client.query(shareQuery, [
+        deviceIds,
+        targetUserId,
+      ]);
 
-            await client.query('COMMIT');
-            
-            return {
-                success: true,
-                sharedDevices: shareResult.rows.length,
-                totalDevices: deviceIds.length,
-                message: `Successfully shared ${shareResult.rows.length} devices with user`
-            };
+      await client.query("COMMIT");
 
-        } catch (error) {
-            await client.query('ROLLBACK');
-            throw error;
-        } finally {
-            client.release();
-        }
+      return {
+        success: true,
+        sharedDevices: shareResult.rows.length,
+        totalDevices: deviceIds.length,
+        message: `Successfully shared ${shareResult.rows.length} devices with user`,
+      };
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
     }
+  }
 
-    // Hàm để lấy danh sách user được share device cụ thể
-    static async getDeviceMembers(deviceId, ownerId) {
-        const query = `
+  // Hàm để lấy danh sách user được share device cụ thể
+  static async getDeviceMembers(deviceId, ownerId) {
+    const query = `
             SELECT u.id, u.username, u.gmail, dm.added_at
             FROM device_members dm
             JOIN users u ON dm.user_id = u.id
@@ -237,12 +284,12 @@ class Device {
             WHERE dm.device_id = $1 AND c.owner_id = $2 AND c.is_active = true
             ORDER BY dm.added_at DESC
         `;
-        const result = await pool.query(query, [deviceId, ownerId]);
-        return result.rows;
-    }
+    const result = await pool.query(query, [deviceId, ownerId]);
+    return result.rows;
+  }
 
-    static async getUsersByDeviceId(deviceId) {
-        const query = `
+  static async getUsersByDeviceId(deviceId) {
+    const query = `
             SELECT DISTINCT u.id, u.fcm_token
             FROM devices d
             JOIN device_members dm ON dm.device_id = d.id
@@ -251,65 +298,73 @@ class Device {
             AND u.is_active = true
             AND u.fcm_token IS NOT NULL   
         `;
-        const result = await pool.query(query, [deviceId]);
-        return result.rows;
-    }
+    const result = await pool.query(query, [deviceId]);
+    return result.rows;
+  }
 
-    // Hàm để revoke quyền truy cập device
-    static async revokeDeviceAccess(deviceId, ownerId, targetUserId) {
-        const client = await pool.connect();
-        
-        try {
-            await client.query('BEGIN');
+  // Hàm để revoke quyền truy cập device
+  static async revokeDeviceAccess(deviceId, ownerId, targetUserId) {
+    const client = await pool.connect();
 
-            // Kiểm tra ownership
-            const ownershipCheckQuery = `
+    try {
+      await client.query("BEGIN");
+
+      // Kiểm tra ownership
+      const ownershipCheckQuery = `
                 SELECT d.id
                 FROM devices d
                 JOIN controllers c ON d.controller_key = c.controller_key
                 WHERE d.id = $1 AND c.owner_id = $2 AND c.is_active = true
             `;
-            const ownershipResult = await client.query(ownershipCheckQuery, [deviceId, ownerId]);
-            
-            if (ownershipResult.rows.length === 0) {
-                throw new Error('Device not found or user does not own this device');
-            }
+      const ownershipResult = await client.query(ownershipCheckQuery, [
+        deviceId,
+        ownerId,
+      ]);
 
-            // Remove access
-            const revokeQuery = `
+      if (ownershipResult.rows.length === 0) {
+        throw new Error("Device not found or user does not own this device");
+      }
+
+      // Remove access
+      const revokeQuery = `
                 DELETE FROM device_members
                 WHERE device_id = $1 AND user_id = $2
                 RETURNING device_id
             `;
-            const revokeResult = await client.query(revokeQuery, [deviceId, targetUserId]);
+      const revokeResult = await client.query(revokeQuery, [
+        deviceId,
+        targetUserId,
+      ]);
 
-            await client.query('COMMIT');
-            
-            return {
-                success: true,
-                revoked: revokeResult.rows.length > 0,
-                message: revokeResult.rows.length > 0 ? 'Access revoked successfully' : 'No access found to revoke'
-            };
+      await client.query("COMMIT");
 
-        } catch (error) {
-            await client.query('ROLLBACK');
-            throw error;
-        } finally {
-            client.release();
-        }
+      return {
+        success: true,
+        revoked: revokeResult.rows.length > 0,
+        message:
+          revokeResult.rows.length > 0
+            ? "Access revoked successfully"
+            : "No access found to revoke",
+      };
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
     }
+  }
 
-    // Thêm hàm để giữ nguyên checkOwnership cho những trường hợp chỉ cần check owner
-    static async checkOwnership(deviceId, userId) {
-        const query = `
+  // Thêm hàm để giữ nguyên checkOwnership cho những trường hợp chỉ cần check owner
+  static async checkOwnership(deviceId, userId) {
+    const query = `
             SELECT d.id
             FROM devices d
             JOIN controllers c ON d.controller_key = c.controller_key
             WHERE d.id = $1 AND c.owner_id = $2 AND c.is_active = true
         `;
-        const result = await pool.query(query, [deviceId, userId]);
-        return result.rows.length > 0;
-    }
+    const result = await pool.query(query, [deviceId, userId]);
+    return result.rows.length > 0;
+  }
 }
 
 module.exports = Device;
