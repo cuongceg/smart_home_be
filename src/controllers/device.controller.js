@@ -56,7 +56,13 @@ class DeviceController {
 
     static async getMyDevices(req, res) {
         try {
-            const devices = await Device.findByUserId(req.user.id);
+            let devices;
+
+            if (req.user.role === 'admin') {
+                devices = await Device.findAll();
+            } else {
+                devices = await Device.findByUserId(req.user.id);
+            }
 
             // Group devices by room
             const roomGroups = devices.reduce((acc, device) => {
@@ -68,7 +74,7 @@ class DeviceController {
                     };
                 }
 
-                acc[roomName].devices.push({
+                const deviceData = {
                     id: device.id,
                     name: device.name,
                     type: device.type,
@@ -76,7 +82,19 @@ class DeviceController {
                     controller_key: device.controller_key,
                     created_at: device.created_at,
                     updated_at: device.updated_at
-                });
+                };
+
+                // Nếu là admin, thêm thông tin owner để phân biệt
+                if (req.user.role === 'admin') {
+                    deviceData.owner = {
+                        id: device.owner_id,
+                        username: device.owner_username,
+                        gmail: device.owner_gmail
+                    };
+                    deviceData.controller_name = device.controller_name;
+                }
+
+                acc[roomName].devices.push(deviceData);
 
                 return acc;
             }, {});
@@ -85,6 +103,7 @@ class DeviceController {
 
             res.json({
                 success: true,
+                message: req.user.role === 'admin' ? 'All devices retrieved successfully' : 'My devices retrieved successfully',
                 data: result
             });
         } catch (error) {

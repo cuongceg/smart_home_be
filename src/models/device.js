@@ -13,6 +13,32 @@ class Device {
         return result.rows[0];
     }
 
+    static async findAll() {
+        const query = `
+        SELECT 
+            d.id,
+            d.controller_key,
+            d.room,
+            d.name,
+            d.type,
+            d.config,
+            d.created_at,
+            d.updated_at,
+            c.owner_id,
+            c.name as controller_name,
+            u.username as owner_username,
+            u.gmail as owner_gmail
+        FROM devices d
+        JOIN controllers c ON d.controller_key = c.controller_key
+        JOIN users u ON c.owner_id = u.id
+        WHERE c.is_active = true
+        ORDER BY d.room, d.name
+    `;
+
+        const result = await pool.query(query);
+        return result.rows;
+    }
+
     static async findById(id) {
         const query = `
             SELECT d.*
