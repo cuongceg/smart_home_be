@@ -7,6 +7,7 @@ const userRoutes = require('./routes/user.routes');
 const controllerRoutes = require('./routes/controller.routes');
 const deviceRoutes = require('./routes/device.routes');
 const deviceDataRoutes = require('./routes/deviceData.routes');
+const {initMQTT} = require('./services/mqttService');
 const { testConnection } = require('./config/database');
 const specs = require('./config/swagger');
 
@@ -68,6 +69,9 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
     try {
         await testConnection();
+
+        // Start MQTT subscriber service for alerts
+        initMQTT();
 
         // Start server
         app.listen(PORT, () => {
