@@ -249,6 +249,22 @@ class User {
             throw error;
         }
     }
+    // Find user by controller_key 
+    static async findByControllerKey(controllerKey){
+        try {
+            const query = `
+                SELECT u.id, u.fcm_token
+                FROM users u
+                JOIN controllers c ON c.owner_id = u.id
+                WHERE c.controller_key = $1 AND u.is_active = true
+            `;
+            
+            const users = await pool.query(query, [controllerKey]);
+            return users;
+        } catch (error) {
+            throw error;
+        }
+    }
 }
 
 module.exports = User;

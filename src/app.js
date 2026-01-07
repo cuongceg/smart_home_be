@@ -7,6 +7,7 @@ const userRoutes = require('./routes/user.routes');
 const controllerRoutes = require('./routes/controller.routes');
 const deviceRoutes = require('./routes/device.routes');
 const deviceDataRoutes = require('./routes/deviceData.routes');
+const {initMQTT} = require('./services/mqttService');
 const { testConnection } = require('./config/database');
 const specs = require('./config/swagger');
 
@@ -74,6 +75,13 @@ const startServer = async () => {
             console.log(`Server is running on port ${PORT}`);
             console.log(`API Documentation available at http://localhost:${PORT}/api-docs`);
             console.log(`Health check available at http://localhost:${PORT}/health`);
+            // Start MQTT subscriber service for alerts
+            try {
+                initMQTT();
+                console.log('MQTT service started');
+            } catch (err) {
+                console.error('Failed to start MQTT service:', err);
+            }
         });
     } catch (error) {
         console.error('Failed to start server:', error);
