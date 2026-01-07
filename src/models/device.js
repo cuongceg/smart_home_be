@@ -241,6 +241,20 @@ class Device {
         return result.rows;
     }
 
+    static async getUsersByDeviceId(deviceId) {
+        const query = `
+            SELECT DISTINCT u.id, u.fcm_token
+            FROM devices d
+            JOIN device_members dm ON dm.device_id = d.id
+            JOIN users u ON u.id = dm.user_id
+            WHERE d.controller_key = $1
+            AND u.is_active = true
+            AND u.fcm_token IS NOT NULL   
+        `;
+        const result = await pool.query(query, [deviceId]);
+        return result.rows;
+    }
+
     // Hàm để revoke quyền truy cập device
     static async revokeDeviceAccess(deviceId, ownerId, targetUserId) {
         const client = await pool.connect();
