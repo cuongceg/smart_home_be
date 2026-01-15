@@ -104,11 +104,13 @@ exports.createUser = async (req, res) => {
       });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     // Create new user
     const newUser = await User.create({
       username,
       gmail,
-      password,
+      password: hashedPassword,
     });
 
     res.status(201).json({
